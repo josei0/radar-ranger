@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Radar Ranger — Pythagorean Distance Simulator</title>
+  <meta name="description" content="Interactive math simulation game for learning the Pythagorean theorem through radar detection gameplay on a Cartesian coordinate grid.">
+  <meta name="keywords" content="Pythagorean theorem, math simulation, distance formula, Cartesian coordinates, education game">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- ============================
+       LOGIN MODAL
+       ============================ -->
+  <div id="loginModal" class="modal-overlay">
+    <div class="modal-card">
+      <div class="modal-radar-icon" aria-hidden="true">📡</div>
+      <h1 class="modal-logo">RADAR RANGER</h1>
+      <p class="modal-subtitle">Pythagorean Distance Mission</p>
+
+      <div class="input-group-modal">
+        <label for="nicknameInput">Enter Your Callsign</label>
+        <input
+          type="text"
+          id="nicknameInput"
+          class="input-nickname"
+          placeholder="e.g. StealthHawk"
+          maxlength="20"
+          autocomplete="off"
+          spellcheck="false"
+        >
+      </div>
+
+      <button id="btnStartGame" class="btn-primary" disabled>
+        START MISSION
+      </button>
+
+      <p class="modal-footer-text">
+        Your score is saved locally. Returning agents keep their rank.
+      </p>
+    </div>
+  </div>
+
+  <!-- ============================
+       GAME CONTAINER
+       ============================ -->
+  <div id="gameContainer" class="game-container hidden">
+
+    <!-- Header -->
+    <header class="game-header">
+      <div class="header-brand">
+        <h2 class="brand-title">RADAR RANGER</h2>
+        <div class="brand-divider"></div>
+        <div class="player-tag">
+          <span class="player-icon">🎖️</span>
+          <span>Agent: </span>
+          <span class="player-name" id="displayPlayerName">—</span>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <button id="btnToggleMusic" class="btn-icon" title="Toggle Music">
+          <span class="icon" id="iconMusic">🔇</span>
+          <span>Music</span>
+        </button>
+        <button id="btnLeaderboard" class="btn-icon" title="Leaderboard">
+          <span class="icon">🏆</span>
+          <span>Rankings</span>
+        </button>
+        <button id="btnSwitchPlayer" class="btn-icon" title="Switch Player">
+          <span class="icon">🔄</span>
+          <span>Switch</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Score Bar -->
+    <div class="score-bar">
+      <div class="score-item">
+        <span class="score-label">Score</span>
+        <span class="score-value" id="scoreDisplay">0</span>
+      </div>
+      <div class="score-item">
+        <span class="score-label">Streak</span>
+        <span class="score-value streak" id="streakDisplay">0</span>
+        <span class="streak-emoji" id="streakEmoji" style="display:none;">🔥</span>
+      </div>
+      <div class="score-item">
+        <span class="score-label">Best Streak</span>
+        <span class="score-value streak" id="bestStreakDisplay">0</span>
+      </div>
+      <div class="score-item">
+        <span class="score-label">Round</span>
+        <span class="round-badge" id="roundDisplay">#1</span>
+      </div>
+    </div>
+
+    <!-- Main -->
+    <main class="game-main">
+
+      <!-- Difficulty Selector -->
+      <section class="difficulty-panel" aria-label="Difficulty Selection">
+        <span class="difficulty-label">Difficulty</span>
+        <button class="difficulty-btn active" data-level="1" id="diffBtn1">
+          ROOKIE
+          <span class="level-tag">Lv.1</span>
+        </button>
+        <button class="difficulty-btn" data-level="2" id="diffBtn2">
+          PRO
+          <span class="level-tag">Lv.2</span>
+        </button>
+        <button class="difficulty-btn" data-level="3" id="diffBtn3">
+          EXPERT
+          <span class="level-tag">Lv.3</span>
+        </button>
+      </section>
+
+      <!-- Canvas -->
+      <div class="canvas-wrapper">
+        <div class="canvas-container">
+          <canvas id="gameCanvas"></canvas>
+
+          <!-- Coordinate Overlay -->
+          <div class="coord-overlay">
+            <div class="coord-tag radar">
+              <span class="coord-icon">📡</span>
+              <span id="coordRadar">A(0, 0)</span>
+            </div>
+            <div class="coord-tag target">
+              <span class="coord-icon">🔴</span>
+              <span id="coordTarget">B(0, 0)</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Action Panel -->
+      <section class="action-panel" aria-label="Game Controls">
+
+        <!-- Controls Row -->
+        <div class="controls-row">
+          <button id="btnTriangle" class="btn-triangle-toggle" title="Toggle triangle helper">
+            <span class="toggle-icon">📐</span>
+            <span>Show Triangle</span>
+          </button>
+          <button id="btnNewRound" class="btn-new-round" title="Generate new positions (keeps score)">
+            <span>🎯</span>
+            <span>New Mission</span>
+          </button>
+        </div>
+
+        <!-- Input Row -->
+        <div class="input-row">
+          <input
+            type="text"
+            id="answerInput"
+            class="input-answer"
+            placeholder="Enter distance (e.g. 5, 4.47, √20)"
+            autocomplete="off"
+            spellcheck="false"
+          >
+          <button id="btnPing" class="btn-ping">
+            <span class="ping-icon">📡</span>
+            PING RADAR!
+          </button>
+        </div>
+
+        <!-- Feedback -->
+        <div class="feedback-container" id="feedbackContainer">
+          <!-- Feedback messages inserted dynamically -->
+        </div>
+
+      </section>
+    </main>
+  </div>
+
+  <!-- ============================
+       LEADERBOARD MODAL
+       ============================ -->
+  <div id="leaderboardModal" class="modal-overlay hidden">
+    <div class="leaderboard-card">
+      <div class="leaderboard-header">
+        <h3 class="leaderboard-title">
+          <span>🏆</span>
+          <span>Agent Rankings</span>
+        </h3>
+        <button id="btnCloseLeaderboard" class="btn-close-modal" title="Close">✕</button>
+      </div>
+
+      <ul class="leaderboard-list" id="leaderboardList">
+        <!-- Populated by JS -->
+      </ul>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
