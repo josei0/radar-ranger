@@ -1312,6 +1312,7 @@
     pauseTimer();
     state.isAnimating = true;
     dom.answerInput.classList.add('incorrect');
+    dom.answerInput.disabled = true;
     dom.btnPing.disabled = true;
 
     state.streak = 0;
@@ -1327,15 +1328,11 @@
 
     triggerFailAnimation();
 
-    // Re-enable after animation
+    // Auto next round
     setTimeout(() => {
-      state.isAnimating = false;
-      dom.answerInput.classList.remove('incorrect');
-      dom.answerInput.disabled = false;
-      dom.btnPing.disabled = false;
-      dom.answerInput.value = '';
-      dom.answerInput.focus();
-    }, 1800);
+      state.roundCount += 1;
+      startNewRound(true);
+    }, NEXT_ROUND_DELAY);
   }
 
   function formatAnswer(answer, answerSquared) {
