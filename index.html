@@ -81,6 +81,10 @@
     <!-- Score Bar -->
     <div class="score-bar">
       <div class="score-item">
+        <span class="score-label">Time Left</span>
+        <span class="score-value timer-display" id="timerDisplay">—</span>
+      </div>
+      <div class="score-item">
         <span class="score-label">Score</span>
         <span class="score-value" id="scoreDisplay">0</span>
       </div>
@@ -118,6 +122,11 @@
           <span class="level-tag">Lv.3</span>
         </button>
       </section>
+
+      <!-- Timer Progress Bar -->
+      <div class="timer-bar-container" id="timerBarContainer">
+        <div class="timer-bar" id="timerBar"></div>
+      </div>
 
       <!-- Canvas -->
       <div class="canvas-wrapper">
@@ -189,6 +198,12 @@
           <span>Agent Rankings</span>
         </h3>
         <button id="btnCloseLeaderboard" class="btn-close-modal" title="Close">✕</button>
+      </div>
+
+      <div class="leaderboard-tabs" id="leaderboardTabs">
+        <button class="lb-tab active" data-level="1">Rookie (Lv.1)</button>
+        <button class="lb-tab" data-level="2">Pro (Lv.2)</button>
+        <button class="lb-tab" data-level="3">Expert (Lv.3)</button>
       </div>
 
       <ul class="leaderboard-list" id="leaderboardList">

@@ -44,6 +44,10 @@
     gridMaxX: 10,
     gridMinY: -10,
     gridMaxY: 10,
+    leaderboardTab: 1,
+    timeLeft: 0,
+    timerDuration: 60,
+    timerActive: false
   };
 
   // Animation state
@@ -89,6 +93,9 @@
     dom.answerInput = $('answerInput');
     dom.btnPing = $('btnPing');
     dom.feedbackContainer = $('feedbackContainer');
+    dom.timerDisplay = $('timerDisplay');
+    dom.timerBar = $('timerBar');
+    dom.lbTabs = document.querySelectorAll('.lb-tab');
     dom.leaderboardModal = $('leaderboardModal');
     dom.leaderboardList = $('leaderboardList');
     dom.btnCloseLeaderboard = $('btnCloseLeaderboard');
@@ -145,20 +152,128 @@
 
   function saveCurrentPlayer() {
     const players = loadPlayers();
-    players[state.currentPlayer] = {
-      nickname: state.currentPlayer,
-      totalScore: state.score,
-      bestStreak: state.bestStreak,
-      roundsPlayed: state.roundCount - 1,
-      lastPlayed: new Date().toISOString(),
-    };
+    
+    if (!players[state.currentPlayer]) {
+      players[state.currentPlayer] = {
+        nickname: state.currentPlayer,
+        lastPlayed: new Date().toISOString(),
+        levels: {
+          1: { highscore: 0, bestStreak: 0 },
+          2: { highscore: 0, bestStreak: 0 },
+          3: { highscore: 0, bestStreak: 0 }
+        }
+      };
+    }
+    
+    const player = players[state.currentPlayer];
+    player.lastPlayed = new Date().toISOString();
+    
+    if (!player.levels) {
+      player.levels = {
+        1: { highscore: 0, bestStreak: 0 },
+        2: { highscore: 0, bestStreak: 0 },
+        3: { highscore: 0, bestStreak: 0 }
+      };
+      player.levels[state.level].highscore = Math.max(0, state.score);
+      player.levels[state.level].bestStreak = Math.max(0, state.bestStreak);
+    } else {
+      player.levels[state.level].highscore = Math.max(player.levels[state.level].highscore, state.score);
+      player.levels[state.level].bestStreak = Math.max(player.levels[state.level].bestStreak, state.bestStreak);
+    }
+    
+    player.totalScore = Math.max(player.totalScore || 0, state.score);
+    player.bestStreak = Math.max(player.bestStreak || 0, state.bestStreak);
+    
     savePlayers(players);
   }
 
   function getLeaderboard() {
     const players = loadPlayers();
     return Object.values(players)
-      .sort((a, b) => b.totalScore - a.totalScore || b.bestStreak - a.bestStreak);
+      .filter(p => p.levels && p.levels[state.leaderboardTab])
+      .sort((a, b) => b.levels[state.leaderboardTab].highscore - a.levels[state.leaderboardTab].highscore || b.levels[state.leaderboardTab].bestStreak - a.levels[state.leaderboardTab].bestStreak);
+  }
+
+  // ─── Timer System ─────────────────────────────
+  let timerInterval = null;
+
+  function resetAndStartTimer() {
+    pauseTimer();
+    if (state.level === 1) state.timerDuration = 45;
+    else if (state.level === 2) state.timerDuration = 60;
+    else state.timerDuration = 90;
+    
+    state.timeLeft = state.timerDuration;
+    resumeTimer();
+  }
+
+  function pauseTimer() {
+    if (timerInterval) {
+      clearInterval(timerInterval);
+      timerInterval = null;
+    }
+    state.timerActive = false;
+  }
+
+  function resumeTimer() {
+    if (state.timerActive || state.timeLeft <= 0) return;
+    state.timerActive = true;
+    updateTimerUI();
+    
+    timerInterval = setInterval(() => {
+      if (!state.timerActive) return;
+      state.timeLeft -= 0.1;
+      
+      if (state.timeLeft <= 0) {
+        state.timeLeft = 0;
+        updateTimerUI();
+        handleTimeout();
+        return;
+      }
+      
+      updateTimerUI();
+      
+      if (state.timeLeft <= 10 && Math.abs(state.timeLeft % 1) < 0.05) {
+        playTickWarningSound();
+      }
+    }, 100);
+  }
+
+  function updateTimerUI() {
+    const seconds = Math.ceil(state.timeLeft);
+    dom.timerDisplay.textContent = seconds + 's';
+    
+    const pct = (state.timeLeft / state.timerDuration) * 100;
+    dom.timerBar.style.width = Math.max(0, pct) + '%';
+    
+    if (state.timeLeft <= 10 && state.timeLeft > 0) {
+      dom.timerBar.classList.add('timer-warning');
+      dom.timerDisplay.classList.add('timer-warning', 'timer-pulse');
+    } else {
+      dom.timerBar.classList.remove('timer-warning');
+      dom.timerDisplay.classList.remove('timer-warning', 'timer-pulse');
+    }
+  }
+
+  function handleTimeout() {
+    pauseTimer();
+    state.isAnimating = true;
+    dom.answerInput.disabled = true;
+    dom.btnPing.disabled = true;
+    
+    state.streak = 0;
+    updateUI();
+    saveCurrentPlayer();
+    
+    playTimeoutSound();
+    
+    showFeedback('error', `Time's up! The submarine has slipped away.`);
+    triggerFailAnimation();
+    
+    setTimeout(() => {
+      state.roundCount += 1;
+      startNewRound(true);
+    }, 2800);
   }
 
   // ─── Coordinate Generator ──────────────────
@@ -289,6 +404,7 @@
     dom.btnPing.disabled = false;
     dom.answerInput.focus();
     renderStatic();
+    resetAndStartTimer();
   }
 
   // ─── UI Updates ─────────────────────────────
@@ -1071,6 +1187,48 @@
     } catch { /* audio not supported */ }
   }
 
+  function playTickWarningSound() {
+    try {
+      const ctx = getAudioCtx();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.type = 'square';
+      osc.frequency.value = 1500;
+      gain.gain.setValueAtTime(0.015, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.04);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.04);
+    } catch { /* audio not supported */ }
+  }
+
+  function playTimeoutSound() {
+    try {
+      const ctx = getAudioCtx();
+      const osc1 = ctx.createOscillator();
+      const osc2 = ctx.createOscillator();
+      const gain = ctx.createGain();
+      
+      osc1.connect(gain);
+      osc2.connect(gain);
+      gain.connect(ctx.destination);
+      
+      osc1.type = 'sawtooth';
+      osc2.type = 'square';
+      osc1.frequency.setValueAtTime(100, ctx.currentTime);
+      osc2.frequency.setValueAtTime(150, ctx.currentTime);
+      
+      gain.gain.setValueAtTime(0.15, ctx.currentTime);
+      gain.gain.linearRampToValueAtTime(0.001, ctx.currentTime + 0.8);
+      
+      osc1.start(ctx.currentTime);
+      osc2.start(ctx.currentTime);
+      osc1.stop(ctx.currentTime + 0.8);
+      osc2.stop(ctx.currentTime + 0.8);
+    } catch { /* audio not supported */ }
+  }
+
   // ─── Input Parsing ─────────────────────────
   function parseAnswer(input) {
     if (!input || typeof input !== 'string') return NaN;
@@ -1116,6 +1274,7 @@
   }
 
   function handleCorrect() {
+    pauseTimer();
     state.isAnimating = true;
     dom.answerInput.classList.add('correct');
     dom.answerInput.disabled = true;
@@ -1150,6 +1309,7 @@
   }
 
   function handleIncorrect() {
+    pauseTimer();
     state.isAnimating = true;
     dom.answerInput.classList.add('incorrect');
     dom.btnPing.disabled = true;
@@ -1189,22 +1349,27 @@
 
   // ─── Leaderboard ────────────────────────────
   function renderLeaderboard() {
+    dom.lbTabs.forEach(btn => {
+      btn.classList.toggle('active', parseInt(btn.dataset.level) === state.leaderboardTab);
+    });
+
     const list = getLeaderboard();
     if (list.length === 0) {
-      dom.leaderboardList.innerHTML = '<li class="lb-empty">No agents ranked yet. Start playing!</li>';
+      dom.leaderboardList.innerHTML = '<li class="lb-empty">No agents ranked on this level yet.</li>';
       return;
     }
 
     dom.leaderboardList.innerHTML = list.map((p, i) => {
       const isCurrent = p.nickname === state.currentPlayer;
+      const stats = p.levels[state.leaderboardTab];
       return `
         <li class="lb-item ${isCurrent ? 'current-player' : ''}">
           <div class="lb-rank">${i + 1}</div>
           <div class="lb-info">
             <div class="lb-name">${escapeHtml(p.nickname)}${isCurrent ? ' (you)' : ''}</div>
-            <div class="lb-stats">Best streak: ${p.bestStreak || 0} · Rounds: ${p.roundsPlayed || 0}</div>
+            <div class="lb-stats">Best streak: ${stats.bestStreak || 0}</div>
           </div>
-          <div class="lb-score">${p.totalScore || 0}</div>
+          <div class="lb-score">${stats.highscore || 0}</div>
         </li>
       `;
     }).join('');
@@ -1274,24 +1439,37 @@
     });
 
     // Leaderboard
+    dom.lbTabs.forEach(btn => {
+      btn.addEventListener('click', () => {
+        playClickSound();
+        state.leaderboardTab = parseInt(btn.dataset.level);
+        renderLeaderboard();
+      });
+    });
+
     dom.btnLeaderboard.addEventListener('click', () => {
+      pauseTimer();
       playClickSound();
+      state.leaderboardTab = state.level;
       renderLeaderboard();
       dom.leaderboardModal.classList.remove('hidden');
     });
 
     dom.btnCloseLeaderboard.addEventListener('click', () => {
       dom.leaderboardModal.classList.add('hidden');
+      if (state.timeLeft > 0 && !state.isAnimating) resumeTimer();
     });
 
     dom.leaderboardModal.addEventListener('click', (e) => {
       if (e.target === dom.leaderboardModal) {
         dom.leaderboardModal.classList.add('hidden');
+        if (state.timeLeft > 0 && !state.isAnimating) resumeTimer();
       }
     });
 
     // Switch player
     dom.btnSwitchPlayer.addEventListener('click', () => {
+      pauseTimer();
       playClickSound();
       saveCurrentPlayer();
       dom.gameContainer.classList.add('hidden');
