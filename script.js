@@ -855,7 +855,7 @@
   let audioCtx = null;
 
   const ambient = {
-    playing: false,
+    playing: true,
     timerID: null,
     step: 0,
     nextNoteTime: 0,
@@ -948,6 +948,7 @@
   }
 
   function startAmbientMusic() {
+    if (ambient.timerID) return;
     try {
       const ctx = getAudioCtx();
       if(ctx.state === 'suspended') ctx.resume();
@@ -1328,6 +1329,10 @@
 
     setupCanvas();
     startNewRound(true);
+
+    if (ambient.playing) {
+      startAmbientMusic();
+    }
   }
 
   // ─── Init ───────────────────────────────────
