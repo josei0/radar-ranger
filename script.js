@@ -26,6 +26,21 @@
   const STORAGE_KEY = 'radarRanger_players';
   const NEXT_ROUND_DELAY = 2800; // ms
 
+  // ─── Firebase Config ───────────────────────
+  const FIREBASE_CONFIG = {
+    apiKey: "AIzaSyBanaqg7KTOKl_Z5KmJM3MmozkMOBdwYWM",
+    authDomain: "radar-ranger.firebaseapp.com",
+    databaseURL: "https://radar-ranger-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "radar-ranger",
+    storageBucket: "radar-ranger.firebasestorage.app",
+    messagingSenderId: "235711947407",
+    appId: "1:235711947407:web:c2ba36fe951d8b568c86fa",
+    measurementId: "G-FL2TXL3593"
+  };
+
+  let firebaseDB = null;
+  let isOnline = false;
+
   // ─── Game State ─────────────────────────────
   const state = {
     level: 1,
@@ -99,6 +114,7 @@
     dom.leaderboardModal = $('leaderboardModal');
     dom.leaderboardList = $('leaderboardList');
     dom.btnCloseLeaderboard = $('btnCloseLeaderboard');
+    dom.onlineDot = $('onlineDot');
   }
 
   // ─── Canvas Context ─────────────────────────
@@ -185,6 +201,9 @@
     player.bestStreak = Math.max(player.bestStreak || 0, state.bestStreak);
     
     savePlayers(players);
+
+    // Push to Firebase
+    firebasePushScore();
   }
 
   function getLeaderboard() {
@@ -192,6 +211,107 @@
     return Object.values(players)
       .filter(p => p.levels && p.levels[state.leaderboardTab])
       .sort((a, b) => b.levels[state.leaderboardTab].highscore - a.levels[state.leaderboardTab].highscore || b.levels[state.leaderboardTab].bestStreak - a.levels[state.leaderboardTab].bestStreak);
+  }
+
+  // ─── Firebase Sync ─────────────────────────
+  function initFirebase() {
+    try {
+      if (FIREBASE_CONFIG.apiKey === 'YOUR_API_KEY') {
+        console.warn('Firebase not configured. Using localStorage only.');
+        return;
+      }
+      if (!window.firebase) {
+        console.warn('Firebase SDK not loaded.');
+        return;
+      }
+      firebase.initializeApp(FIREBASE_CONFIG);
+      firebaseDB = firebase.database();
+
+      // Online/offline detection
+      const connRef = firebaseDB.ref('.info/connected');
+      connRef.on('value', (snap) => {
+        isOnline = !!snap.val();
+        updateOnlineIndicator();
+        if (isOnline) {
+          // Sync any pending local data
+          syncLocalToFirebase();
+        }
+      });
+
+      console.log('Firebase initialized successfully.');
+    } catch (e) {
+      console.warn('Firebase init error:', e);
+    }
+  }
+
+  function updateOnlineIndicator() {
+    if (!dom.onlineDot) return;
+    if (isOnline) {
+      dom.onlineDot.classList.add('online');
+      dom.onlineDot.title = 'Online — synced';
+    } else {
+      dom.onlineDot.classList.remove('online');
+      dom.onlineDot.title = 'Offline — local only';
+    }
+  }
+
+  function firebasePushScore() {
+    if (!firebaseDB || !state.currentPlayer) return;
+    const players = loadPlayers();
+    const player = players[state.currentPlayer];
+    if (!player) return;
+
+    const ref = firebaseDB.ref('players/' + sanitizeKey(state.currentPlayer));
+    ref.set(player).catch(e => console.warn('Firebase write error:', e));
+  }
+
+  function syncLocalToFirebase() {
+    if (!firebaseDB) return;
+    const players = loadPlayers();
+    Object.values(players).forEach(player => {
+      if (player.nickname) {
+        const ref = firebaseDB.ref('players/' + sanitizeKey(player.nickname));
+        ref.update(player).catch(e => console.warn('Firebase sync error:', e));
+      }
+    });
+  }
+
+  async function firebaseFetchLeaderboard(level) {
+    if (!firebaseDB) return null;
+    try {
+      const snap = await firebaseDB.ref('players').once('value');
+      const data = snap.val();
+      if (!data) return [];
+
+      return Object.values(data)
+        .filter(p => p.levels && p.levels[level])
+        .sort((a, b) => {
+          const aScore = (a.levels[level] && a.levels[level].highscore) || 0;
+          const bScore = (b.levels[level] && b.levels[level].highscore) || 0;
+          const aStreak = (a.levels[level] && a.levels[level].bestStreak) || 0;
+          const bStreak = (b.levels[level] && b.levels[level].bestStreak) || 0;
+          return bScore - aScore || bStreak - aStreak;
+        });
+    } catch (e) {
+      console.warn('Firebase read error:', e);
+      return null;
+    }
+  }
+
+  async function firebaseLoadPlayer(nickname) {
+    if (!firebaseDB) return null;
+    try {
+      const snap = await firebaseDB.ref('players/' + sanitizeKey(nickname)).once('value');
+      return snap.val();
+    } catch (e) {
+      console.warn('Firebase player load error:', e);
+      return null;
+    }
+  }
+
+  function sanitizeKey(str) {
+    // Firebase keys cannot contain . $ # [ ] /
+    return str.replace(/[.\$#\[\]\/]/g, '_');
   }
 
   // ─── Timer System ─────────────────────────────
@@ -1345,12 +1465,23 @@
   }
 
   // ─── Leaderboard ────────────────────────────
-  function renderLeaderboard() {
+  async function renderLeaderboard() {
     dom.lbTabs.forEach(btn => {
       btn.classList.toggle('active', parseInt(btn.dataset.level) === state.leaderboardTab);
     });
 
-    const list = getLeaderboard();
+    // Show loading state
+    dom.leaderboardList.innerHTML = '<li class="lb-loading">Loading rankings</li>';
+
+    // Try Firebase first, fallback to localStorage
+    let list = null;
+    if (firebaseDB && isOnline) {
+      list = await firebaseFetchLeaderboard(state.leaderboardTab);
+    }
+    if (!list) {
+      list = getLeaderboard();
+    }
+
     if (list.length === 0) {
       dom.leaderboardList.innerHTML = '<li class="lb-empty">No agents ranked on this level yet.</li>';
       return;
@@ -1358,7 +1489,7 @@
 
     dom.leaderboardList.innerHTML = list.map((p, i) => {
       const isCurrent = p.nickname === state.currentPlayer;
-      const stats = p.levels[state.leaderboardTab];
+      const stats = p.levels[state.leaderboardTab] || { highscore: 0, bestStreak: 0 };
       return `
         <li class="lb-item ${isCurrent ? 'current-player' : ''}">
           <div class="lb-rank">${i + 1}</div>
@@ -1508,12 +1639,47 @@
     if (ambient.playing) {
       startAmbientMusic();
     }
+
+    // Try loading latest data from Firebase
+    if (firebaseDB && isOnline) {
+      firebaseLoadPlayer(nickname).then(fbPlayer => {
+        if (fbPlayer && fbPlayer.levels) {
+          // Merge Firebase data into local
+          const players = loadPlayers();
+          if (!players[nickname]) players[nickname] = {};
+          const local = players[nickname];
+
+          // Use the higher score from either source
+          if (!local.levels) local.levels = { 1: {highscore:0,bestStreak:0}, 2: {highscore:0,bestStreak:0}, 3: {highscore:0,bestStreak:0} };
+          [1,2,3].forEach(lv => {
+            const fb = fbPlayer.levels[lv] || { highscore: 0, bestStreak: 0 };
+            const lc = local.levels[lv] || { highscore: 0, bestStreak: 0 };
+            local.levels[lv] = {
+              highscore: Math.max(fb.highscore || 0, lc.highscore || 0),
+              bestStreak: Math.max(fb.bestStreak || 0, lc.bestStreak || 0),
+            };
+          });
+          local.nickname = nickname;
+          local.totalScore = Math.max(local.totalScore || 0, fbPlayer.totalScore || 0);
+          local.bestStreak = Math.max(local.bestStreak || 0, fbPlayer.bestStreak || 0);
+          local.lastPlayed = new Date().toISOString();
+
+          savePlayers(players);
+
+          // Update running state with merged data
+          state.score = local.levels[state.level].highscore || state.score;
+          state.bestStreak = local.levels[state.level].bestStreak || state.bestStreak;
+          updateUI();
+        }
+      });
+    }
   }
 
   // ─── Init ───────────────────────────────────
   function init() {
     cacheDom();
     bindEvents();
+    initFirebase();
     dom.nicknameInput.focus();
   }
 

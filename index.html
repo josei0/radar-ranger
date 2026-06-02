@@ -40,7 +40,7 @@
       </button>
 
       <p class="modal-footer-text">
-        Your score is saved locally. Returning agents keep their rank.
+        Your score syncs online. All agents share the same global ranking.
       </p>
     </div>
   </div>
@@ -59,6 +59,7 @@
           <span class="player-icon">🎖️</span>
           <span>Agent: </span>
           <span class="player-name" id="displayPlayerName">—</span>
+          <span class="online-dot" id="onlineDot" title="Offline">●</span>
         </div>
       </div>
 
@@ -211,6 +212,10 @@
       </ul>
     </div>
   </div>
+
+  <!-- Firebase SDK (compat mode for simplicity) -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 
   <script src="script.js"></script>
 </body>

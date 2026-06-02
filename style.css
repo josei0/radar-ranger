@@ -333,6 +333,44 @@ h1, h2, h3, h4 {
   font-size: 1rem;
 }
 
+/* Online/Offline indicator */
+.online-dot {
+  font-size: 0.6rem;
+  color: var(--accent-red);
+  margin-left: 2px;
+  transition: color 0.3s ease;
+}
+
+.online-dot.online {
+  color: var(--sonar-green);
+  text-shadow: 0 0 6px var(--sonar-green-glow);
+}
+
+/* Leaderboard loading state */
+.lb-loading {
+  text-align: center;
+  padding: var(--space-2xl) var(--space-md);
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.lb-loading::after {
+  content: '';
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--border-subtle);
+  border-top-color: var(--accent-cyan);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-left: var(--space-sm);
+  vertical-align: middle;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
 .header-actions {
   display: flex;
   align-items: center;
