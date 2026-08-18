@@ -1,0 +1,155 @@
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Inter:wght@300;400;500;600;700&family=Orbitron:wght@400;500;600;700;900&display=swap');
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+
+/* ============================================
+   THEME: Playful (SD Kelas 1-6)
+   Cerah, rounded besar, font ramah anak
+   ============================================ */
+:root,
+[data-theme="playful"] {
+  --background: #FFF8F0;
+  --foreground: #2D3436;
+  --card-bg: #FFFFFF;
+  --card-border: #FFE0B2;
+  --primary: #FF6B6B;
+  --primary-hover: #EE5A5A;
+  --secondary: #4ECDC4;
+  --accent: #FFE66D;
+  --accent-text: #F57F17;
+  --muted: #B0BEC5;
+  --muted-bg: #FFF3E0;
+  --success: #66BB6A;
+  --error: #EF5350;
+  --nav-bg: #FF6B6B;
+  --nav-text: #FFFFFF;
+  --font-heading: 'Nunito', sans-serif;
+  --font-body: 'Nunito', sans-serif;
+  --radius: 1.25rem;
+  --radius-lg: 1.75rem;
+}
+
+/* ============================================
+   THEME: Science Lab (SMP Kelas 7-9)
+   Modern, bersih, biru muda, geometris
+   ============================================ */
+[data-theme="sciencelab"] {
+  --background: #F0F4F8;
+  --foreground: #1A202C;
+  --card-bg: #FFFFFF;
+  --card-border: #CBD5E0;
+  --primary: #3182CE;
+  --primary-hover: #2B6CB0;
+  --secondary: #38B2AC;
+  --accent: #63B3ED;
+  --accent-text: #2C5282;
+  --muted: #A0AEC0;
+  --muted-bg: #EBF4FF;
+  --success: #48BB78;
+  --error: #FC8181;
+  --nav-bg: #2D3748;
+  --nav-text: #E2E8F0;
+  --font-heading: 'Inter', sans-serif;
+  --font-body: 'Inter', sans-serif;
+  --radius: 0.75rem;
+  --radius-lg: 1rem;
+}
+
+/* ============================================
+   THEME: Futuristic (SMA Kelas 10-12)
+   Dark mode, neon, cyberpunk, profesional
+   ============================================ */
+[data-theme="futuristic"] {
+  --background: #0B0E17;
+  --foreground: #E0E6ED;
+  --card-bg: #141927;
+  --card-border: #1E293B;
+  --primary: #00E5A0;
+  --primary-hover: #00CC8E;
+  --secondary: #00B4D8;
+  --accent: #7C3AED;
+  --accent-text: #A78BFA;
+  --muted: #64748B;
+  --muted-bg: #1E293B;
+  --success: #00E5A0;
+  --error: #F43F5E;
+  --nav-bg: #0F1320;
+  --nav-text: #94A3B8;
+  --font-heading: 'Orbitron', sans-serif;
+  --font-body: 'Inter', sans-serif;
+  --radius: 0.5rem;
+  --radius-lg: 0.75rem;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card-bg: var(--card-bg);
+  --color-card-border: var(--card-border);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-secondary: var(--secondary);
+  --color-accent: var(--accent);
+  --color-accent-text: var(--accent-text);
+  --color-muted: var(--muted);
+  --color-muted-bg: var(--muted-bg);
+  --color-success: var(--success);
+  --color-error: var(--error);
+  --color-nav-bg: var(--nav-bg);
+  --color-nav-text: var(--nav-text);
+  --font-heading: var(--font-heading);
+  --font-body: var(--font-body);
+  --radius-theme: var(--radius);
+  --radius-theme-lg: var(--radius-lg);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-body);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+h1, h2, h3, h4 {
+  font-family: var(--font-heading);
+}
+
+/* Smooth page transitions */
+.page-enter {
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes float {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-20px); }
+  100% { transform: translateY(0px); }
+}
+
+@keyframes blob {
+  0% { transform: translate(0px, 0px) scale(1); }
+  33% { transform: translate(30px, -50px) scale(1.1); }
+  66% { transform: translate(-20px, 20px) scale(0.9); }
+  100% { transform: translate(0px, 0px) scale(1); }
+}
+
+@keyframes pulseGlow {
+  0% { box-shadow: 0 0 0 0 var(--primary); }
+  70% { box-shadow: 0 0 0 10px transparent; }
+  100% { box-shadow: 0 0 0 0 transparent; }
+}
+
+@keyframes shimmer {
+  100% { transform: translateX(100%); }
+}
+
+@theme inline {
+  --animate-float: float 6s ease-in-out infinite;
+  --animate-blob: blob 7s infinite;
+  --animate-pulse-glow: pulseGlow 2s infinite;
+  --animate-shimmer: shimmer 1.5s infinite;
+}

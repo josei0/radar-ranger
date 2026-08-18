@@ -1,0 +1,6 @@
+password: 12345678
+guru: ivan123
+kelas 1-3: john123
+kelas 4-6: sarah123
+kelas 7-9: budi123
+kelas 10-12: andrew123
