@@ -116,8 +116,24 @@ export default function DashboardNav({ profile, theme }: DashboardNavProps) {
                   <div className="px-4 py-2 border-b border-white/10 sm:hidden">
                     <p className="font-bold text-sm">{profile?.display_name}</p>
                     <p className="text-xs opacity-60 capitalize">{profile?.role}</p>
+                    
+                    {/* Mobile Stats Summary */}
+                    <div className="flex items-center gap-3 mt-2 text-xs font-bold">
+                      <span className="flex items-center gap-1 text-yellow-400"><Zap className="w-3 h-3 fill-current" /> Lv {level}</span>
+                      <span className="flex items-center gap-1 text-orange-500"><Flame className="w-3 h-3 fill-current" /> {profile?.weekly_streak ?? 0}</span>
+                    </div>
                   </div>
                   
+                  {/* Mobile Leaderboard Link */}
+                  <Link
+                    href="/dashboard/leaderboard"
+                    onClick={() => setIsDropdownOpen(false)}
+                    className="flex items-center gap-3 px-4 py-2.5 hover:bg-white/5 transition-colors cursor-pointer group text-sm font-semibold sm:hidden"
+                  >
+                    <Trophy className="w-4 h-4 group-hover:text-yellow-400 transition-colors" />
+                    <span className="group-hover:text-yellow-400 transition-colors">Leaderboard</span>
+                  </Link>
+
                   <Link
                     href="/dashboard/profile"
                     onClick={() => setIsDropdownOpen(false)}

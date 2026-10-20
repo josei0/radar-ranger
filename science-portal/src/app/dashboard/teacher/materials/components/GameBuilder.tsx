@@ -651,7 +651,7 @@ export default function GameBuilder({ gameType, data, onChange }: Props) {
                 </div>
                 <div>
                   <label className="block text-xs font-bold opacity-70 mb-1">Pilihan Pengecoh (Pisahkan dengan koma)</label>
-                  <input type="text" value={(q.options || []).join(",")} onChange={(e) => handleUpdate(i, 'options', e.target.value.split(","))} placeholder="Satu, Dua, Empat" className="w-full px-3 py-1.5 rounded-lg border border-gray-200" />
+                  <input type="text" value={(q.options || []).join(",")} onChange={(e) => handleUpdate(i, 'options', e.target.value ? e.target.value.split(",").map(s => s.trim()).filter(s => s) : [])} placeholder="Kosongkan jika tidak ingin ada pengecoh" className="w-full px-3 py-1.5 rounded-lg border border-gray-200" />
                 </div>
               </div>
             </div>

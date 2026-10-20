@@ -43,8 +43,8 @@ export default function SortingBins({ materialId, currentHighscore, gameData, on
         icon: "📦",
         color: colors[index % colors.length]
       }));
-      rawItems = gameData.sorting_bins.items.map((i: any) => ({
-        id: i.id,
+      rawItems = gameData.sorting_bins.items.map((i: any, idx: number) => ({
+        id: i.id || `item-${idx}`,
         text: i.title || i.text || "Item",
         binId: i.correctBinId || i.binId
       }));
@@ -182,8 +182,9 @@ export default function SortingBins({ materialId, currentHighscore, gameData, on
   }
 
   if (items.length === 0) return null;
-
+  
   const currentItem = items[currentIdx];
+
 
   return (
     <div className="flex flex-col h-full items-center max-w-4xl mx-auto w-full relative">

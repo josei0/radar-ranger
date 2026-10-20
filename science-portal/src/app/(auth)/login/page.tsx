@@ -136,7 +136,16 @@ export default function LoginPage() {
             </button>
           </form>
 
-          <div className="mt-8 text-center border-t border-white/10 pt-6">
+          <div className="mt-6 text-center">
+            <Link
+              href="/reset-password"
+              className="text-sm text-amber-400/80 font-semibold hover:text-amber-300 hover:underline transition-colors"
+            >
+              Lupa Password?
+            </Link>
+          </div>
+
+          <div className="mt-4 text-center border-t border-white/10 pt-6">
             <p className="text-sm text-gray-400">
               New to Science Portal?{" "}
               <Link

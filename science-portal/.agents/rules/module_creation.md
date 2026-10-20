@@ -1,8 +1,10 @@
 # Module Creation Guidelines
 
-### Mandatory Pre-Flight Check (Duplication Prevention)
-- **Before** generating any new module, proposing topics, or writing SQL scripts, you MUST check the existing modules in the database (e.g., by executing a SQL query to list all `materials` or by analyzing the project's existing seed files).
-- Your goal is to identify the highest existing `id` and to review existing `title`s and `category`s to ensure you do not propose duplicate topics or use conflicting IDs.
+### Mandatory Pre-Flight Check (Duplication & ID Conflict Prevention)
+- **CRITICAL**: Before generating any new module or writing SQL scripts, you MUST execute a script to query the database and find the highest existing `id` in the ENTIRE `materials` table (e.g., `SELECT MAX(id) FROM materials`).
+- **DO NOT** guess or hardcode IDs like 7, 8, 9, 10 without knowing the global `MAX(id)`. Doing so will cause `ON CONFLICT (id) DO UPDATE` to OVERWRITE existing modules in other categories!
+- If writing a SQL seed script, either dynamically determine the next available ID by querying the DB first, OR completely omit the `id` column in the `INSERT` statement so the database can auto-increment it safely.
+- Review existing `title`s and `category`s to ensure you do not propose duplicate topics or use conflicting `game_slug`s.
 
 Whenever the user requests the creation of a new learning module, you MUST provide a complete package containing all of the following database columns/fields:
 

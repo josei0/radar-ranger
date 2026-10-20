@@ -214,9 +214,30 @@ export default function RegisterPage() {
               </motion.div>
             )}
 
-            {/* Hidden grade for teachers */}
+            {/* Teacher Access Code */}
             {role === "teacher" && (
-              <input type="hidden" name="gradeLevel" value="" />
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+              >
+                <input type="hidden" name="gradeLevel" value="" />
+                <label className="block text-sm font-semibold text-gray-300 mb-1.5 mt-1">
+                  Teacher Access Code
+                </label>
+                <div className="relative group">
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 group-focus-within:text-purple-400 transition-colors">
+                    <Lock className="w-5 h-5" />
+                  </div>
+                  <input
+                    type="password"
+                    name="teacherCode"
+                    required
+                    autoComplete="off"
+                    placeholder="Enter secret code"
+                    className="w-full pl-11 pr-4 py-3.5 bg-black/30 backdrop-blur-sm rounded-xl border border-white/10 focus:border-purple-400 focus:bg-black/50 focus:ring-1 focus:ring-purple-400 focus:outline-none transition-all text-white placeholder:text-gray-500"
+                  />
+                </div>
+              </motion.div>
             )}
 
             <button

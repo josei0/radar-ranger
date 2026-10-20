@@ -29,19 +29,35 @@ export default function MaterialsClient({ materials }: { materials: Material[] }
     if (!editingMaterial) return;
     setSaving(true);
     
-    if ('id' in editingMaterial && editingMaterial.id) {
-      await updateMaterial(editingMaterial.id, editingMaterial);
+    const materialToSave = { ...editingMaterial };
+    if (!materialToSave.game_slug && materialToSave.title) {
+      // Generate unique slug from title
+      materialToSave.game_slug = materialToSave.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '') + '-' + Date.now().toString().slice(-4);
+    }
+
+    let result;
+    if ('id' in materialToSave && materialToSave.id) {
+      result = await updateMaterial(materialToSave.id, materialToSave);
     } else {
-      await createMaterial(editingMaterial);
+      result = await createMaterial(materialToSave);
     }
     
     setSaving(false);
+    
+    if (result && result.error) {
+      alert("Error saving material: " + result.error);
+      return;
+    }
+    
     setEditingMaterial(null);
   };
 
   const handleDelete = async (id: number) => {
     if (confirm("Are you sure you want to delete this material? This will also delete all student progress for this material.")) {
-      await deleteMaterial(id);
+      const result = await deleteMaterial(id);
+      if (result && result.error) {
+        alert("Error deleting material: " + result.error);
+      }
     }
   };
 

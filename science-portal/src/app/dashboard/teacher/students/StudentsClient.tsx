@@ -3,9 +3,10 @@
 import { useState } from "react";
 import { Profile, gradeToCategory } from "@/lib/types";
 import { motion, AnimatePresence } from "framer-motion";
-import { Users, Search, Edit2, LineChart, X, Trophy, AlertTriangle, ArrowLeft } from "lucide-react";
+import { Users, Search, Edit2, LineChart, X, Trophy, AlertTriangle, ArrowLeft, KeyRound } from "lucide-react";
 import Link from "next/link";
 import { updateStudent } from "../actions";
+import { resetStudentPassword } from "@/app/(auth)/reset-password/actions";
 
 export default function StudentsClient({ students, progressList }: { students: Profile[], progressList: any[] }) {
   const [searchTerm, setSearchTerm] = useState("");
@@ -14,6 +15,12 @@ export default function StudentsClient({ students, progressList }: { students: P
   
   const [editForm, setEditForm] = useState({ display_name: "", grade_level: 1 });
   const [saving, setSaving] = useState(false);
+
+  // Reset password state
+  const [resettingStudent, setResettingStudent] = useState<Profile | null>(null);
+  const [newPassword, setNewPassword] = useState("");
+  const [resetLoading, setResetLoading] = useState(false);
+  const [resetResult, setResetResult] = useState<{ success?: boolean; error?: string } | null>(null);
 
   const filteredStudents = students.filter(s => 
     s.display_name.toLowerCase().includes(searchTerm.toLowerCase())
@@ -33,6 +40,26 @@ export default function StudentsClient({ students, progressList }: { students: P
     });
     setSaving(false);
     setEditingStudent(null);
+  };
+
+  const handleResetPassword = async () => {
+    if (!resettingStudent || !newPassword) return;
+    setResetLoading(true);
+    setResetResult(null);
+    const result = await resetStudentPassword(resettingStudent.id, newPassword);
+    setResetLoading(false);
+    if (result.success) {
+      setResetResult({ success: true });
+      setNewPassword("");
+    } else {
+      setResetResult({ error: result.error });
+    }
+  };
+
+  const closeResetModal = () => {
+    setResettingStudent(null);
+    setNewPassword("");
+    setResetResult(null);
   };
 
   return (
@@ -103,6 +130,13 @@ export default function StudentsClient({ students, progressList }: { students: P
                         title="Edit Student"
                       >
                         <Edit2 className="w-5 h-5" />
+                      </button>
+                      <button 
+                        onClick={() => { setResettingStudent(student); setResetResult(null); setNewPassword(""); }}
+                        className="p-2 bg-amber-500/10 text-amber-600 rounded-xl hover:bg-amber-500/20 transition-colors"
+                        title="Reset Password"
+                      >
+                        <KeyRound className="w-5 h-5" />
                       </button>
                     </td>
                   </tr>
@@ -232,6 +266,88 @@ export default function StudentsClient({ students, progressList }: { students: P
                   )}
                 </div>
               </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Reset Password Modal */}
+      <AnimatePresence>
+        {resettingStudent && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-card-bg w-full max-w-md rounded-3xl p-8 shadow-2xl relative"
+            >
+              <button 
+                onClick={closeResetModal}
+                className="absolute top-6 right-6 opacity-50 hover:opacity-100"
+              >
+                <X className="w-6 h-6" />
+              </button>
+              
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-10 h-10 bg-amber-500/20 rounded-xl flex items-center justify-center">
+                  <KeyRound className="w-5 h-5 text-amber-600" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-black" style={{ fontFamily: "var(--font-heading)" }}>Reset Password</h2>
+                  <p className="text-sm opacity-60">{resettingStudent.display_name}</p>
+                </div>
+              </div>
+
+              {resetResult?.success ? (
+                <div className="text-center py-4">
+                  <div className="w-14 h-14 mx-auto bg-green-500/15 rounded-full flex items-center justify-center mb-4">
+                    <KeyRound className="w-7 h-7 text-green-500" />
+                  </div>
+                  <p className="text-green-600 font-bold text-lg mb-1">Password Berhasil Direset!</p>
+                  <p className="text-sm opacity-60 mb-6">Siswa sekarang bisa login dengan password baru.</p>
+                  <button
+                    onClick={closeResetModal}
+                    className="w-full py-3 bg-black/10 font-bold rounded-xl hover:bg-black/20 transition-colors"
+                  >
+                    Tutup
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-5">
+                  {resetResult?.error && (
+                    <div className="bg-red-500/10 border border-red-500/30 text-red-600 px-4 py-3 rounded-xl text-sm flex items-center gap-2">
+                      <AlertTriangle className="w-4 h-4 min-w-[16px]" />
+                      {resetResult.error}
+                    </div>
+                  )}
+
+                  <div>
+                    <label className="block text-sm font-bold opacity-70 mb-2">Password Baru</label>
+                    <input 
+                      type="password"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      placeholder="Minimal 6 karakter"
+                      minLength={6}
+                      className="w-full px-4 py-3 bg-black/5 border border-black/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 transition-all font-medium"
+                    />
+                  </div>
+
+                  <div className="bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 p-3 rounded-xl">
+                    <p className="text-xs text-amber-800 dark:text-amber-400 font-medium">
+                      ⚠️ Password lama siswa akan langsung diganti. Pastikan Anda sudah menginformasikan password baru ke siswa yang bersangkutan.
+                    </p>
+                  </div>
+
+                  <button 
+                    onClick={handleResetPassword}
+                    disabled={resetLoading || newPassword.length < 6}
+                    className="w-full py-4 bg-gradient-to-r from-amber-500 to-orange-600 text-white font-bold rounded-xl mt-2 hover:from-amber-400 hover:to-orange-500 transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {resetLoading ? "Memproses..." : "Reset Password Siswa"}
+                  </button>
+                </div>
+              )}
             </motion.div>
           </div>
         )}
